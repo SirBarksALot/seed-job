@@ -1,0 +1,41 @@
+def IPs_dictionary = ["job-name" : "http://application-repo-address.git",
+                     ];
+def origin_name_var = "origin";
+def refspec_var = "+refs/heads/*:refs/remotes/origin/* +refs/merge-requests/*/head:refs/remotes/origin/merge-requests/*";
+def branches_var = '*/${gitlabSourceBranch}';
+def jenkinsfile_name_var = "Jenkinsfile";
+  
+
+for(app_repo_ip in IPs_dictionary) {
+  println(app_repo_ip);
+  pipelineJob(app_repo_ip.key) {
+    concurrentBuild(true)
+    logRotator {
+      numToKeep(5)
+    }
+    triggers {
+      gitlab {
+        triggerOnPush(true)
+        triggerOnMergeRequest(true)
+        triggerOpenMergeRequestOnPush: "never"
+        triggerOnNoteRequest(false)
+        triggerOnAcceptedMergeRequest(true)
+      }
+    }
+    definition {
+      cpsScm {
+        scm {
+          git {
+            remote {
+              url(app_repo_ip.value)
+              name(origin_name_var)
+              refspec(refspec_var)
+            }
+            branches(branches_var)
+          }
+        }
+        scriptPath(jenkinsfile_name_var)
+      }
+    }
+  }
+}
